@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    run: fx
+  name: fx
+  namespace: default
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  selector:
+    matchLabels:
+      run: fx
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: fx
+    spec:
+      containers:
+      - image: dotnsf/react-fx
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: SETTINGS
+          value: "prod"
+        - name: REACT_APP_FX_URL
+          value: "https://fx.xxxxxxxx.net"
+        name: fx
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    run: fx
+  name: fx
+  namespace: default
+spec:
+  ports:
+  - port: 10080
+    protocol: TCP
+    targetPort: 10080
+  selector:
+    run: fx
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: fx
+  labels:
+    app: fx
+spec:
+  host: fx.mycluster-osa23-6fe57c7eaf38abe6232341d97eae54c0-0000.jp-osa.containers.appdomain.cloud
+  to:
+    kind: Service
+    name: fx
+    weight: 100
+  port:
+    targetPort: 10080
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
+#---
+#apiVersion: route.openshift.io/v1
+#kind: Route
+#metadata:
+#  name: fx
+#  labels:
+#    app: fx
+#spec:
+##  host: fx.mycluster-osa23-6fe57c7eaf38abe6232341d97eae54c0-0000.jp-osa.containers.appdomain.cloud
+#  host: fx.shinpooh.com
+#  to:
+#    kind: Service
+#    name: fx
+#    weight: 100
+#  port:
+#    targetPort: 10080
+#  tls:
+#    termination: edge
+#    insecureEdgeTerminationPolicy: Redirect
+#  wildcardPolicy: None
